@@ -14,7 +14,12 @@ import android.widget.TextView
 import timber.log.Timber
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
-
+import android.app.PendingIntent
+import android.app.AlarmManager
+import android.content.Context
+import android.annotation.SuppressLint
+import android.content.Intent
+import java.text.SimpleDateFormat
 
 
 class MainActivity : WearableActivity() {
@@ -27,12 +32,21 @@ class MainActivity : WearableActivity() {
     private lateinit var mClockView: TextClock
     private lateinit var mNotice: TextView
 
+    // Wake up the Activity in ambient mode.
+    private lateinit var mAmbientStateAlarmManager: AlarmManager
+    private lateinit var mAmbientStatePendingIntent: PendingIntent
+
     // foreground and background color in active view.
     private var mActiveBackgroundColor: Int = 0
     private var mActiveForegroundColor: Int = 0
 
     // Milliseconds between waking processor/screen for updates when active
     private val ACTIVE_INTERVAL_MS: Long = TimeUnit.SECONDS.toMillis(1)
+    // Milliseconds between waking processor/screen for updates when in ambient mode
+    private val AMBIENT_INTERVAL_MS = TimeUnit.SECONDS.toMillis(10)
+
+    @SuppressLint("SimpleDateFormat")
+    private val mDebugTimeFormat = SimpleDateFormat("HH:mm:ss")
 
     // The last time that the stop watch was updated or the start time.
     private var mLastTick = 0L
@@ -52,6 +66,17 @@ class MainActivity : WearableActivity() {
 
         // Enables Always-on
         setAmbientEnabled()
+
+        mAmbientStateAlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        // Create pending intent
+        val intent = Intent(applicationContext, MainActivity::class.java)
+        mAmbientStatePendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            R.id.msg_update,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
         // Get on screen items
         mStartStopButton = findViewById(R.id.startstopbtn)
@@ -94,11 +119,25 @@ class MainActivity : WearableActivity() {
 
         setTimeView(minutes, seconds)
 
-        // In Active mode update directly via handler.
-        val timeMs = System.currentTimeMillis()
-        val delayMs = ACTIVE_INTERVAL_MS - timeMs % ACTIVE_INTERVAL_MS
-        Timber.d("NOT ambient - delaying by: $delayMs")
-        mActiveModeUpdateHandler.sendEmptyMessageDelayed(R.id.msg_update, delayMs)
+        if (!isAmbient) {
+            // In Active mode update directly via handler.
+            val timeMs = System.currentTimeMillis()
+            val delayMs = ACTIVE_INTERVAL_MS - timeMs % ACTIVE_INTERVAL_MS
+            Timber.d("NOT ambient - delaying by: $delayMs")
+            mActiveModeUpdateHandler.sendEmptyMessageDelayed(R.id.msg_update, delayMs)
+        } else {
+            // In Ambient mode update via AlarmManager.
+            val timeMs = System.currentTimeMillis()
+            val delayMs = AMBIENT_INTERVAL_MS - timeMs % AMBIENT_INTERVAL_MS
+            val triggerTimeMs = timeMs + delayMs
+            Timber.d("In ambient - trigger time: %s".format(mDebugTimeFormat.format(triggerTimeMs)))
+            mAmbientStateAlarmManager.cancel(mAmbientStatePendingIntent)
+            mAmbientStateAlarmManager.setExact(
+                AlarmManager.RTC_WAKEUP,
+                triggerTimeMs,
+                mAmbientStatePendingIntent
+            )
+        }
     }
 
     private fun incrementTimeSoFar() {
@@ -107,6 +146,18 @@ class MainActivity : WearableActivity() {
         Timber.d(String.format("current time: %d. start: %d", now, mLastTick))
         mTimeSoFar = mTimeSoFar + now - mLastTick
         mLastTick = now
+    }
+
+    /**
+     * This is mostly triggered by the Alarms we set in Ambient mode and informs us we need to
+     * update the screen (and process any data).
+     */
+    public override fun onNewIntent(intent: Intent) {
+        Timber.d("onNewIntent(): $intent")
+        super.onNewIntent(intent)
+        setIntent(intent)
+        Timber.d("Running? $mRunning, Start time: $mLastTick")
+        updateDisplayAndSetRefresh()
     }
 
     /**
@@ -180,6 +231,10 @@ class MainActivity : WearableActivity() {
         Timber.d("EXIT Ambient")
         super.onExitAmbient()
 
+        if (mRunning) {
+            mAmbientStateAlarmManager.cancel(mAmbientStatePendingIntent)
+        }
+
         mTimeView.setTextColor(mActiveForegroundColor)
         val textPaint = mTimeView.paint
         textPaint.isAntiAlias = true
@@ -206,6 +261,7 @@ class MainActivity : WearableActivity() {
 
         mActiveModeUpdateHandler.removeMessages(R.id.msg_update)
         mActiveClockUpdateHandler.removeMessages(R.id.msg_update)
+        mAmbientStateAlarmManager.cancel(mAmbientStatePendingIntent)
 
         super.onDestroy()
     }
@@ -215,10 +271,10 @@ class MainActivity : WearableActivity() {
      */
     private abstract class UpdateHandler(reference: MainActivity) : Handler() {
 
-        val mStopwatchActivityWeakReference: WeakReference<MainActivity> = WeakReference(reference)
+        val mMainActivityWeakReference: WeakReference<MainActivity> = WeakReference(reference)
 
         override fun handleMessage(message: Message) {
-            val mainActivity = mStopwatchActivityWeakReference.get() ?: return
+            val mainActivity = mMainActivityWeakReference.get() ?: return
 
             when (message.what) {
                 R.id.msg_update -> handleUpdate(mainActivity)

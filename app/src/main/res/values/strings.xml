@@ -7,5 +7,5 @@
     <string name="btn_label_start">Start</string>
     <string name="btn_label_pause">Pause</string>
     <string name="btn_label_reset">Reset</string>
-    <string name="notice_update_frequency">Updates every minute</string>
+    <string name="notice_update_frequency">Updates every 10 seconds</string>
 </resources>
