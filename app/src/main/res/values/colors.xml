@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="activeBackground">#09bcd3</color>
+    <color name="activeText">#455b64</color>
+    <color name="activeButtonBackground">@color/white</color>
+    <color name="activeButtonRipple">@color/white</color>
+</resources>

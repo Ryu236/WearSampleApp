@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.wear.widget.BoxInsetLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:background="@color/activeBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity"
+        tools:deviceIds="wear"
+        android:padding="@dimen/box_inset_layout_padding">
+
+    <RelativeLayout
+            android:id="@+id/gridbackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            app:layout_box="all">
+
+        <TextClock
+                android:id="@+id/clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/activeText"
+                android:textSize="12sp" />
+
+        <TextView
+                android:id="@+id/timeview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center"
+                android:layout_rowWeight="1"
+                android:includeFontPadding="false"
+                android:textColor="@color/activeText"
+                android:textSize="50sp" />
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/timeview"
+                android:orientation="horizontal">
+
+            <Button
+                    android:id="@+id/startstopbtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_background"
+                    android:text="@string/btn_label_start" />
+
+            <Button
+                    android:id="@+id/resetbtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_background"
+                    android:text="@string/btn_label_reset" />
+        </LinearLayout>
+
+        <TextView
+                android:id="@+id/notice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:includeFontPadding="false"
+                android:text="@string/notice_update_frequency"
+                android:textColor="@color/white"
+                android:visibility="invisible" />
+
+    </RelativeLayout>
+</android.support.wear.widget.BoxInsetLayout>

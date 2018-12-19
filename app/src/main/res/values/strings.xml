@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">WearSampleApp</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="btn_label_start">Start</string>
+    <string name="btn_label_pause">Pause</string>
+    <string name="btn_label_reset">Reset</string>
+    <string name="notice_update_frequency">Updates every minute</string>
+</resources>
